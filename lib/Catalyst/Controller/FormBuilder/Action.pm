@@ -2,12 +2,16 @@ package Catalyst::Controller::FormBuilder::Action;
 
 use strict;
 use CGI::FormBuilder;
+use CGI::FormBuilder::Source::File;
 use File::Spec;
+use Class::Inspector;
 use NEXT;
 
-use base qw/Catalyst::Action Class::Accessor::Fast/;
+use base qw/Catalyst::Action Class::Accessor::Fast Class::Data::Inheritable/;
 
-__PACKAGE__->mk_accessors(qw/_attr_params/);
+__PACKAGE__->mk_classdata(qw/_source_class/);
+__PACKAGE__->mk_accessors(qw/_attr_params _source_type/);
+__PACKAGE__->_source_class('CGI::FormBuilder::Source::File');
 
 sub _setup_form {
     my ( $self, $controller, $c ) = @_;
@@ -19,20 +23,43 @@ sub _setup_form {
     my %attr = (
         debug   => $c->debug ? 2 : 0,
         %{ $config->{new} || {} },
+        %{ $self->_source_conf_data( $controller, $c ) || {} },
         params  => $c->req,
         action  => $c->req->uri->path,
         header  => 0,                    # always disable headers
         cookies => 0,                    # and cookies
         title   => __PACKAGE__,
-        c       => $c,                   # allow \&validate to get $c
+        c       => $c,                   # allow \&validate to get $c,
     );
 
-    if (my $source = $self->_source($controller, $c) ) {
-        $attr{source} = $source;
+    $self->_create_formbuilder(\%attr);
+}
+
+sub _source_conf_data {
+    my $self = shift;
+
+    if ( my $source = $self->_source(@_) ) {
+        s/^\.*/./ if $_;    # XX workaround for CGI::FormBuilder::Source::File bug
+        my $adapter = $self->_create_source_adapter();
+        return { $adapter->parse($source) };
+    }
+}
+
+sub _create_formbuilder {
+    my $self = shift;
+
+    return CGI::FormBuilder->new( @_ );
+}
+
+sub _create_source_adapter {
+    my $self = shift;
+
+    my $class = $self->_source_type || $self->_source_class;
+    unless ( Class::Inspector->loaded($class) ) {
+        require Class::Inspector->filename($class);
     }
 
-    s/^\.*/./;    # XX workaround for CGI::FormBuilder::Source::File bug
-    return CGI::FormBuilder->new( \%attr );
+    return $class->new();
 }
 
 sub _source {
@@ -106,6 +133,7 @@ sub execute {
     my $form = $self->_setup_form(@_);
     $controller->_formbuilder($form);
     $self->NEXT::execute(@_);
+    $controller->_formbuilder($form);   # keep the same form in case of forwards
 
     $self->setup_template_vars( @_ );
 }

@@ -3,7 +3,7 @@ package Catalyst::Controller::FormBuilder;
 use strict;
 use base qw/Catalyst::Controller Class::Accessor::Fast/;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 __PACKAGE__->mk_accessors(qw/_fb_setup/);
 
@@ -32,6 +32,8 @@ sub __setup {
             obj_name    => $config->{obj_name} || 'FormBuilder',
             action      => $action,
             attr_name   => $config->{attr_name} || 'Form',
+            source_type => $config->{source_type} || undef,
+            template_type => $tmpl_type,
         }
     );
     no strict 'refs';
@@ -52,6 +54,9 @@ sub create_action {
 
     if ( exists $args{attributes}{$attr_name} ) {
         $args{_attr_params} = delete $args{attributes}{$attr_name};
+        if ( my $source_type = $self->_fb_setup->{source_type} ) {
+            $args{_source_type} = $source_type;
+        }
         push @{ $args{attributes}{ActionClass} }, $self->_fb_setup->{action};
     }
 
@@ -87,6 +92,9 @@ Catalyst::Controller::FormBuilder - Catalyst FormBuilder Base Controller
 
         my $form = $self->formbuilder;
 
+        # add email form field to fields already defined edit.fb
+        $form->field( name => 'email', validate => 'EMAIL' );
+
         if ( $form->submitted ) {
             if ( $form->validate ) {
                 return $c->response->body("VALID FORM");
@@ -97,9 +105,6 @@ Catalyst::Controller::FormBuilder - Catalyst FormBuilder Base Controller
                   [ grep { !$_->validate } $form->fields ];
             }
         }
-
-        # add email form field to fields already defined edit.fb
-        $form->field( name => 'email', validate => 'EMAIL' );
     }
 
     # explicitedly use books/edit.fb, otherwise books/view.fb is used
@@ -113,11 +118,11 @@ Catalyst::Controller::FormBuilder - Catalyst FormBuilder Base Controller
 
 =head1 DESCRIPTION
 
-This plugin merges the functionality of B<CGI::FormBuilder> with Catalyst and
-the following templating systems: Template Toolkit, Mason and HTML::Template.
-This gives you access to all of FormBuilder's niceties, such as controllable
-field stickiness, multilingual support, and Javascript generation. For more
-details, see L<CGI::FormBuilder> or the website at:
+This base controller merges the functionality of B<CGI::FormBuilder> with
+Catalyst and the following templating systems: Template Toolkit, Mason and
+HTML::Template. This gives you access to all of FormBuilder's niceties,
+such as controllablefield stickiness, multilingual support, and Javascript
+generation. For more details, see L<CGI::FormBuilder> or the website at:
 
     http://www.formbuilder.org
 
@@ -250,32 +255,27 @@ instead of a table. You could do something like this:
       <title>[% formbuilder.title %]</title>
       [% formbuilder.jshead %]<!-- javascript -->
     </head>
-    <body>
-      [% formbuilder.start %]
+     <body>
+      [% formbuilder.start -%]
       <div id="form">
-        [% FOREACH field IN formbuilder.fields %]
-        <div id="[%- field.name -%]">
-          <div class="label">
-            [% field.required
-                  ? qq(<span class="required">$field.label</span>)
-                  : field.label
-            %]
-          </div>
-          <div class="field">
-            [% field.tag %]
-            [% IF field.invalid %]
-                <span class="error">
-                    Missing or invalid entry, please try again.
-                </error>
-            [% END %]
-          </div>
-        </div>
+        [% FOREACH field IN formbuilder.fields -%]
+        <p>
+            <label>
+               <span [% IF field.required %]class="required"[%END%]>[%field.label%]</span>
+            </label>
+          [% field.field %]
+          [% IF field.invalid -%]
+              <span class="error">
+                  Missing or invalid entry, please try again.
+              </span>
+          [% END %]
+          </p>
         [% END %]
         <div id="submit">[% formbuilder.submit %]</div>
         <div id="reset">[% formbuilder.reset %]</div>
         </div>
       </div>
-      [% formbuilder.end %]
+      [% formbuilder.end -%]
     </body>
 
 In this case, you would B<not> call C<FormBuilder.render>, since that would
@@ -291,13 +291,14 @@ support at L<CGI::FormBuilder::Template::TT2>.
 
 =head1 CONFIGURATION
 
-You can set defaults for your forms using Catalyst's config method:
+You can set defaults for your forms using Catalyst's config method inside
+your controller.
 
-    MyApp->config(
+    __PACKAGE__->config(
         'Controller::FormBuilder' => {
             new => {
                 method     => 'post',
-                stylesheet => 1,
+                # stylesheet => 1,
                 messages   => '/locale/fr_FR/form_messages.txt',
             },
             form_path =>
@@ -308,6 +309,7 @@ You can set defaults for your forms using Catalyst's config method:
             obj_name      => 'FormBuilder',
             form_suffix   => 'fb',
             attr_name     => 'Form',
+            source_type   => 'CGI::FormBuilder::Source::File',
         }
     );
 
@@ -333,7 +335,7 @@ ref (ie, [qw/template1 templates2/]).
 
 The suffix that configuration files have. By default, it is C<fb>.
 
-=item method_name
+=item C<method_name>
 
 Accessor method name available in your controller. By default, it is
 C<formbuilder>.
@@ -357,6 +359,11 @@ e.g. $c->stash->{FormBuilder} = $formbuilder.
 
 The attribute name. By default, it is C<Form>.
 e.g. sub edit : Form { ... }
+
+=item C<source_type>
+
+The source adapter class name. By default, it is
+C<CGI::FormBuilder::Source::File>. See L<CGI::FormBuilder::Source>
 
 =back
 

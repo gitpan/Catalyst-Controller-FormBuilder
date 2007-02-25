@@ -14,6 +14,7 @@ sub edit : Local Form {
     my ( $self, $c, @args ) = @_;
 
     my $form = $self->formbuilder;
+    $form->field( name => 'email', validate => \&_validate_email );
 
     if ( $form->submitted ) {
         if ( $form->validate ) {
@@ -29,9 +30,21 @@ sub edit : Local Form {
         }
     }
 
-    $form->field( name => 'email', validate => 'EMAIL' );
     $form->method('GET');
     $c->stash->{template} = "books/edit.tt";
+}
+
+sub _validate_email {
+    my ($email,$c) = @_;
+
+    unless (ref $c eq "TestApp") {
+        die "\$c reference not passed to validate callback";
+    }
+
+    unless ($email =~ /\@/) {
+        return 0;
+    }
+    return 1;
 }
 
 sub edit_item : Local Form('/books/edit2') {
