@@ -6,6 +6,7 @@ use CGI::FormBuilder::Source::File;
 use File::Spec;
 use Class::Inspector;
 use NEXT;
+use Scalar::Util ();
 
 use base qw/Catalyst::Action Class::Accessor::Fast Class::Data::Inheritable/;
 
@@ -131,6 +132,7 @@ sub execute {
       $controller->_fb_setup->{action};
 
     my $form = $self->_setup_form(@_);
+    Scalar::Util::weaken($form->{c});
     $controller->_formbuilder($form);
     $self->NEXT::execute(@_);
     $controller->_formbuilder($form);   # keep the same form in case of forwards
