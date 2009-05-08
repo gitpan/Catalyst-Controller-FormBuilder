@@ -1,9 +1,9 @@
 package Catalyst::Controller::FormBuilder;
 
 use strict;
-use base qw/Catalyst::Controller Class::Accessor::Fast/;
+use base qw/Catalyst::Controller/;
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 __PACKAGE__->mk_accessors(qw/_fb_setup/);
 

@@ -1,4 +1,4 @@
-use inc::Module::Install;
+use inc::Module::Install 0.87;
 
 name 'Catalyst-Controller-FormBuilder';
 all_from 'lib/Catalyst/Controller/FormBuilder.pm';
@@ -7,7 +7,7 @@ all_from 'lib/Catalyst/Controller/FormBuilder.pm';
 
 requires 'CGI::FormBuilder'               => '3.02';
 requires 'Catalyst::Runtime'              => '5.7';
-requires 'Class::Accessor::Fast'          => '0.25';
+requires 'MRO::Compat'                    => '0.09';
 requires 'Test::WWW::Mechanize::Catalyst' => '0.37';
 requires 'Tie::IxHash'                    => '1.21';
 requires 'Class::Data::Inheritable'       => '0.04';

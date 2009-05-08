@@ -5,10 +5,10 @@ use CGI::FormBuilder;
 use CGI::FormBuilder::Source::File;
 use File::Spec;
 use Class::Inspector;
-use NEXT;
+use MRO::Compat;
 use Scalar::Util ();
 
-use base qw/Catalyst::Action Class::Accessor::Fast Class::Data::Inheritable/;
+use base qw/Catalyst::Action Class::Data::Inheritable/;
 
 __PACKAGE__->mk_classdata(qw/_source_class/);
 __PACKAGE__->mk_accessors(qw/_attr_params _source_type/);
@@ -126,7 +126,7 @@ sub execute {
     my $self = shift;
     my ( $controller, $c ) = @_;
 
-    return $self->NEXT::execute(@_)
+    return $self->maybe::next::method(@_)
       unless exists $self->attributes->{ActionClass}
       && $self->attributes->{ActionClass}[0] eq
       $controller->_fb_setup->{action};
@@ -134,7 +134,7 @@ sub execute {
     my $form = $self->_setup_form(@_);
     Scalar::Util::weaken($form->{c});
     $controller->_formbuilder($form);
-    $self->NEXT::execute(@_);
+    $self->maybe::next::method(@_);
     $controller->_formbuilder($form);   # keep the same form in case of forwards
 
     $self->setup_template_vars( @_ );

@@ -3,6 +3,8 @@ package TestApp::Component::TT;
 use strict;
 use base 'Catalyst::View::TT';
 
+use MRO::Compat;
+
 sub new {
     my $self = shift;
     $self->config(
@@ -16,7 +18,8 @@ sub new {
             TIMER              => 0,
         }
     );
-    return $self->NEXT::new(@_);
+    
+    return $self = $self->maybe::next::method(@_)
 }
 
 1;
