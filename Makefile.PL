@@ -16,4 +16,7 @@ requires 'Scalar::Util'                   => '1.19';
 recommends 'Catalyst::View::TT'           => '0.23';
 
 auto_install;
-WriteAll;
+resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/trunk/Catalyst-Controller-FormBuilder/';
+
+WriteAll();
+

@@ -2,14 +2,16 @@ package Catalyst::Controller::FormBuilder;
 
 use strict;
 use base qw/Catalyst::Controller/;
+use MRO::Compat;
+use mro 'c3';
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 __PACKAGE__->mk_accessors(qw/_fb_setup/);
 
 sub new {
     my $class = shift;
-    my $self  = $class->NEXT::new(@_);
+    my $self  = $class->next::method(@_);
     $self->__setup();
     return $self;
 }
@@ -318,7 +320,7 @@ your controller.
 =item C<new>
 
 This accepts the exact same options as FormBuilder's C<new()> method
-(which is alot). See L<CGI::FormBuilder> for a full list of options.
+(which is a lot). See L<CGI::FormBuilder> for a full list of options.
 
 =item C<form_path>
 
